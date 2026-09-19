@@ -11,7 +11,7 @@ def create_lkas11(packer, frame, CP, apply_torque, steer_req,
                   torque_fault, lkas11, sys_warning, sys_state, enabled,
                   left_lane, right_lane,
                   left_lane_depart, right_lane_depart,
-                  lkas_icon):
+                  lkas_icon, mask_daw_chime=False):
   values = {s: lkas11[s] for s in [
     "CF_Lkas_LdwsActivemode",
     "CF_Lkas_LdwsSysState",
@@ -37,6 +37,12 @@ def create_lkas11(packer, frame, CP, apply_torque, steer_req,
   values["CF_Lkas_ActToi"] = steer_req
   values["CF_Lkas_ToiFlt"] = torque_fault  # seems to allow actuation on CR_Lkas_StrToqReq
   values["CF_Lkas_MsgCount"] = frame % 0x10
+
+  # On cameras that run the Driver Attention Warning, this bit is raised for the ~4 s of the
+  # "Consider taking a break" popup and makes the cluster chime; real FCW events leave it low there.
+  # Only cleared while the camera itself is at the lowest attention level or showing the popup.
+  if mask_daw_chime:
+    values["CF_Lkas_FcwBasReq"] = 0
 
   if CP.carFingerprint in (CAR.HYUNDAI_SONATA, CAR.HYUNDAI_PALISADE, CAR.KIA_NIRO_EV, CAR.KIA_NIRO_HEV_2021, CAR.KIA_NIRO_PHEV_2022, CAR.HYUNDAI_SANTA_FE,
                            CAR.HYUNDAI_IONIQ_EV_2020, CAR.HYUNDAI_IONIQ_PHEV, CAR.KIA_SELTOS, CAR.HYUNDAI_ELANTRA_2021, CAR.GENESIS_G70_2020,
@@ -123,6 +129,47 @@ def create_clu11(packer, frame, clu11, button, CP):
   # send buttons to camera on camera-scc based cars
   bus = 2 if CP.flags & HyundaiFlags.CAMERA_SCC else 0
   return packer.make_can_msg("CLU11", bus, values)
+
+
+# CF_LkasDawStatus: 0 = DAW off, 1-5 = attention level shown on the cluster (5 = high),
+# 6 = "Consider taking a break" popup, 7 = error
+DAW_REST_RECOMMEND = 6
+
+
+def create_lkas12(packer, lkas12, daw_level):
+  """Pass the camera's LKAS12 through, masking only the Driver Attention Warning popup.
+
+  The stock camera scores driver attention from steering input, so the level decays while
+  openpilot steers and eventually raises the rest-recommend popup. The level itself is passed
+  through untouched so the cluster gauge stays honest; only the popup value is replaced with
+  the last real level the camera reported.
+  """
+  # every bit of the camera's 8-byte frame is copied, including the ones the DBC doesn't name:
+  # the cluster faults if any of them (or the DLC) differ from what the camera sends
+  values = {s: lkas12[s] for s in [
+    "CF_Lkas_Unknown0",
+    "CF_Lkas_Unknown1",
+    "CF_Lkas_TsrSlifOpt",
+    "CF_LkasTsrStatus",
+    "CF_Lkas_Unknown2",
+    "CF_Lkas_TsrSpeed_Display_Clu",
+    "CF_LkasTsrSpeed_Display_Navi",
+    "CF_Lkas_TsrAddinfo_Display",
+    "CF_Lkas_Unknown3",
+    "CF_Lkas_Daw_USM",
+    "CF_LkasDawStatus",
+    "CF_Lkas_Unknown4",
+    "CF_Lkas_DawRestRecommend",
+    "CF_Lkas_Unknown5",
+    "CF_Lkas_Unknown6",
+    "CF_Lkas_Unknown7",
+  ]}
+  # the popup is two things at once: status 6 and the rest-recommend flag (bit 44), which the camera
+  # only ever raises alongside it. The cluster keys on the flag, so both have to go.
+  if values["CF_LkasDawStatus"] == DAW_REST_RECOMMEND:
+    values["CF_LkasDawStatus"] = daw_level
+  values["CF_Lkas_DawRestRecommend"] = 0
+  return packer.make_can_msg("LKAS12", 0, values)
 
 
 def create_lfahda_mfc(packer, enabled, lfa_icon):

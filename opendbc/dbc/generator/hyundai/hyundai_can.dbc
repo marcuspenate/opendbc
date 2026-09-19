@@ -997,14 +997,23 @@ BO_ 832 LKAS11: 8 LDWS_LKAS
  SG_ CF_Lkas_LdwsOpt_USM : 59|3@1+ (1.0,0.0) [0.0|7.0] ""  CLU,MDPS
  SG_ CF_Lkas_Unknown2 : 62|2@1+ (1.0,0.0) [0.0|1.0] "" XXX
 
-BO_ 1342 LKAS12: 6 LDWS_LKAS
+BO_ 1342 LKAS12: 8 LDWS_LKAS
+ SG_ CF_Lkas_Unknown0 : 0|8@1+ (1.0,0.0) [0.0|255.0] ""  CLU
+ SG_ CF_Lkas_Unknown1 : 8|2@1+ (1.0,0.0) [0.0|3.0] ""  CLU
  SG_ CF_Lkas_TsrSlifOpt : 10|2@1+ (1.0,0.0) [0.0|3.0] ""  CLU
  SG_ CF_LkasTsrStatus : 12|2@1+ (1.0,0.0) [0.0|3.0] ""  CLU
+ SG_ CF_Lkas_Unknown2 : 14|2@1+ (1.0,0.0) [0.0|3.0] ""  CLU
  SG_ CF_Lkas_TsrSpeed_Display_Clu : 16|8@1+ (1.0,0.0) [0.0|255.0] ""  CLU
  SG_ CF_LkasTsrSpeed_Display_Navi : 24|8@1+ (1.0,0.0) [0.0|255.0] ""  BCM,CLU
  SG_ CF_Lkas_TsrAddinfo_Display : 32|2@1+ (1.0,0.0) [0.0|3.0] ""  CLU
- SG_ CF_LkasDawStatus : 40|3@1+ (1,0) [0|7] "" CLU
+ SG_ CF_Lkas_Unknown3 : 34|3@1+ (1.0,0.0) [0.0|7.0] ""  CLU
  SG_ CF_Lkas_Daw_USM : 37|3@1+ (1,0) [0|7] "" CLU
+ SG_ CF_LkasDawStatus : 40|3@1+ (1,0) [0|7] "" CLU
+ SG_ CF_Lkas_Unknown4 : 43|1@1+ (1.0,0.0) [0.0|1.0] ""  CLU
+ SG_ CF_Lkas_DawRestRecommend : 44|1@1+ (1.0,0.0) [0.0|1.0] ""  CLU
+ SG_ CF_Lkas_Unknown5 : 45|3@1+ (1.0,0.0) [0.0|7.0] ""  CLU
+ SG_ CF_Lkas_Unknown6 : 48|8@1+ (1.0,0.0) [0.0|255.0] ""  CLU
+ SG_ CF_Lkas_Unknown7 : 56|8@1+ (1.0,0.0) [0.0|255.0] ""  CLU
 
 BO_ 1338 TMU_GW_E_01: 8 CLU
  SG_ CF_Gway_TeleReqDrLock : 0|2@1+ (1.0,0.0) [0.0|3.0] ""  BCM

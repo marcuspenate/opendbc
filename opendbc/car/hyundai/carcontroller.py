@@ -158,7 +158,7 @@ class CarController(CarControllerBase, EsccCarController, LeadDataCarController,
                                               torque_fault, CS.lkas11, sys_warning, sys_state, CC.enabled,
                                               hud_control.leftLaneVisible, hud_control.rightLaneVisible,
                                               left_lane_warning, right_lane_warning,
-                                              self.lkas_icon))
+                                              self.lkas_icon, mask_daw_chime=CS.daw_mask_chime))
 
     # Button messages
     if not self.CP.openpilotLongitudinalControl:
@@ -180,6 +180,10 @@ class CarController(CarControllerBase, EsccCarController, LeadDataCarController,
                                                       self.lead_data, hud_control, set_speed_in_units, stopping,
                                                       CC.cruiseControl.override, use_fca, self.CP,
                                                       CS.main_cruise_enabled, self.tuning, self.ESCC))
+
+    # 10 Hz LKAS12 passthrough (panda blocks the camera's copy) with the DAW popup masked
+    if self.frame % 10 == 0 and CS.lkas12_seen:
+      can_sends.append(hyundaican.create_lkas12(self.packer, CS.lkas12, CS.daw_level))
 
     # 20 Hz LFA MFA message
     if self.frame % 5 == 0 and self.CP.flags & HyundaiFlags.SEND_LFA.value:

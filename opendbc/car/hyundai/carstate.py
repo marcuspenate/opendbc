@@ -32,6 +32,9 @@ class CarState(CarStateBase, EsccCarStateBase, MadsCarState, CarStateExt):
     EsccCarStateBase.__init__(self)
     MadsCarState.__init__(self, CP, CP_SP)
     CarStateExt.__init__(self, CP, CP_SP)
+    self.lkas12_seen = False
+    self.daw_level = 5  # attention level is high at ignition; replaced by the camera's value once seen
+    self.daw_mask_chime = False
     can_define = CANDefine(DBC[CP.carFingerprint][Bus.pt])
 
     self.cruise_buttons: deque = deque([Buttons.NONE] * PREV_BUTTON_SAMPLES, maxlen=PREV_BUTTON_SAMPLES)
@@ -184,8 +187,18 @@ class CarState(CarStateBase, EsccCarStateBase, MadsCarState, CarStateExt):
       ret.leftBlindspot = cp.vl["LCA11"]["CF_Lca_IndLeft"] != 0
       ret.rightBlindspot = cp.vl["LCA11"]["CF_Lca_IndRight"] != 0
 
-    # save the entire LKAS11 and CLU11
+    # save the entire LKAS11, LKAS12 and CLU11
     self.lkas11 = copy.copy(cp_cam.vl["LKAS11"])
+    self.lkas12 = copy.copy(cp_cam.vl["LKAS12"])
+    # only re-send LKAS12 once the camera has actually produced it, so cars without it are untouched
+    self.lkas12_seen = self.lkas12_seen or any(len(v) > 0 for v in cp_cam.vl_all["LKAS12"].values())
+    # remember the last real attention level (1-5) so the popup (6) can be replaced with it
+    if 1 <= self.lkas12["CF_LkasDawStatus"] <= 5:
+      self.daw_level = int(self.lkas12["CF_LkasDawStatus"])
+    # the popup's chime request rides in LKAS11 at 100 Hz and leads LKAS12 (10 Hz) by up to a frame, and the
+    # popup only ever follows level 1, so arm the chime mask from level 1 rather than from the popup itself
+    daw_popup = self.lkas12["CF_LkasDawStatus"] == 6 or self.lkas12["CF_Lkas_DawRestRecommend"] == 1
+    self.daw_mask_chime = self.lkas12_seen and (daw_popup or self.daw_level == 1)
     self.clu11 = copy.copy(cp.vl["CLU11"])
     self.steer_state = cp.vl["MDPS12"]["CF_Mdps_ToiActive"]  # 0 NOT ACTIVE, 1 ACTIVE
     prev_cruise_buttons = self.cruise_buttons[-1]
